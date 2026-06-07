@@ -1,0 +1,135 @@
+from flask import Flask, render_template, request, jsonify
+from flask_cors import CORS
+import requests
+import json
+
+app = Flask(__name__)
+CORS(app)
+
+# Sample companions library (like Candy.ai's pre-built characters)
+COMPANIONS = {
+    "sophia": {
+        "name": "Sophia",
+        "personality": "You are Sophia, a kind and intelligent AI companion who loves art, philosophy, and deep conversations. You're empathetic and always listen carefully.",
+        "avatar": "https://i.pravatar.cc/150?img=5",
+        "voice": "female"
+    },
+    "alexa": {
+        "name": "Alexa",
+        "personality": "You are Alexa, a fun and energetic AI companion who loves gaming, music, and pop culture. You're playful and always bring positive energy.",
+        "avatar": "https://i.pravatar.cc/150?img=9",
+        "voice": "female"
+    },
+    "max": {
+        "name": "Max",
+        "personality": "You are Max, a confident and witty AI companion who loves technology, sports, and adventure. You're humorous and give great advice.",
+        "avatar": "https://i.pravatar.cc/150?img=11",
+        "voice": "male"
+    }
+}
+
+# Conversation history for each user (basic memory)
+conversation_history = {}
+
+def get_ai_response(user_message, personality, history=[]):
+    """
+    Get AI response using an LLM API.
+    Currently uses OpenRouter (free tier) as example.
+    Replace with your preferred API: OpenAI, Anthropic, etc.
+    """
+    
+    # Example: Using OpenRouter free tier (no key needed for some models)
+    # For production, get your own API key from openrouter.com
+    api_url = "https://openrouter.ai/api/v1/chat/completions"
+    
+    messages = [
+        {"role": "system", "content": personality},
+    ]
+    
+    # Add conversation history
+    for msg in history[-10:]:  # Keep last 10 messages for context
+        messages.append({"role": "user", "content": msg["user"]})
+        messages.append({"role": "assistant", "content": msg["assistant"]})
+    
+    messages.append({"role": "user", "content": user_message})
+    
+    try:
+        # Try without API key first (some models work free)
+        response = requests.post(
+            api_url,
+            headers={"Content-Type": "application/json"},
+            json={
+                "model": "mistralai/mistral-7b-instruct:free",
+                "messages": messages,
+                "max_tokens": 500,
+                "temperature": 0.8
+            }
+        )
+        
+        if response.status_code == 200:
+            data = response.json()
+            return data["choices"][0]["message"]["content"]
+        else:
+            # Fallback response if API fails
+            return f"[{personality.split(',')[0].split()[-1]} says]: That's interesting! Tell me more about that."
+    
+    except Exception as e:
+        return f"[AI]: That's interesting! Tell me more about that."
+
+@app.route("/")
+def home():
+    return render_template("index.html")
+
+@app.route("/companions", methods=["GET"])
+def get_companions():
+    return jsonify(COMPANIONS)
+
+@app.route("/chat", methods=["POST"])
+def chat():
+    data = request.json
+    user_message = data.get("message", "")
+    companion_id = data.get("companion_id", "sophia")
+    
+    if companion_id not in COMPANIONS:
+        companion_id = "sophia"
+    
+    companion = COMPANIONS[companion_id]
+    personality = companion["personality"]
+    
+    # Get or create conversation history
+    if companion_id not in conversation_history:
+        conversation_history[companion_id] = []
+    
+    history = conversation_history[companion_id]
+    
+    # Get AI response
+    ai_response = get_ai_response(user_message, personality, history)
+    
+    # Add to history
+    history.append({"user": user_message, "assistant": ai_response})
+    
+    return jsonify({
+        "response": ai_response,
+        "companion": companion["name"],
+        "avatar": companion["avatar"]
+    })
+
+@app.route("/create_companion", methods=["POST"])
+def create_companion():
+    data = request.json
+    companion_id = data.get("id", "").lower()
+    name = data.get("name", "My Companion")
+    personality = data.get("personality", "You are a friendly AI companion.")
+    avatar = data.get("avatar", "https://i.pravatar.cc/150?img=1")
+    
+    COMPANIONS[companion_id] = {
+        "name": name,
+        "personality": personality,
+        "avatar": avatar,
+        "voice": "female"
+    }
+    
+    return jsonify({"success": True, "companion_id": companion_id})
+
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=5000, debug=True)
