@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Candy AI Clone - Your AI Companion</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            height: 100vh;
+            display: flex;
+        }
+        
+        .sidebar {
+            width: 280px;
+            background: #1a1a2e;
+            color: white;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .sidebar h1 {
+            font-size: 24px;
+            margin-bottom: 30px;
+            color: #e94562;
+        }
+        
+        .companion-list {
+            flex: 1;
+            overflow-y: auto;
+        }
+        
+        .companion-item {
+            padding: 15px;
+            margin-bottom: 10px;
+            background: #16213e;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .companion-item:hover {
+            background: #0f3460;
+            transform: translateX(5px);
+        }
+        
+        .companion-item.active {
+            background: #e94562;
+        }
+        
+        .companion-item img {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            margin-bottom: 10px;
+        }
+        
+        .companion-item h3 {
+            font-size: 16px;
+            margin-bottom: 5px;
+        }
+        
+        .companion-item p {
+            font-size: 12px;
+            color: #a0a0a0;
+        }
+        
+        .create-btn {
+            padding: 15px;
+            background: #e94562;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            margin-top: 20px;
+        }
+        
+        .create-btn:hover {
+            background: #ff6b6b;
+        }
+        
+        .chat-main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+        }
+        
+        .chat-header {
+            background: #1a1a2e;
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            color: white;
+        }
+        
+        .chat-header img {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            margin-right: 15px;
+        }
+        
+        .chat-header h2 {
+            font-size: 22px;
+            margin-bottom: 5px;
+        }
+        
+        .chat-header p {
+            font-size: 14px;
+            color: #a0a0a0;
+        }
+        
+        .chat-messages {
+            flex: 1;
+            background: #1a1a2e;
+            padding: 20px;
+            border-radius: 12px;
+            overflow-y: auto;
+            margin-bottom: 20px;
+        }
+        
+        .message {
+            margin-bottom: 20px;
+            display: flex;
+            align-items: flex-start;
+        }
+        
+        .message.user {
+            flex-direction: row-reverse;
+        }
+        
+        .message img {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            margin: 0 10px;
+        }
+        
+        .message-content {
+            max-width: 60%;
+            padding: 12px 18px;
+            border-radius: 12px;
+            line-height: 1.5;
+        }
+        
+        .message.ai .message-content {
+            background: #0f3460;
+            color: white;
+        }
+        
+        .message.user .message-content {
+            background: #e94562;
+            color: white;
+        }
+        
+        .chat-input {
+            background: #1a1a2e;
+            padding: 20px;
+            border-radius: 12px;
+            display: flex;
+        }
+        
+        .chat-input input {
+            flex: 1;
+            padding: 15px;
+            border: none;
+            background: #16213e;
+            color: white;
+            border-radius: 8px;
+            font-size: 14px;
+            outline: none;
+        }
+        
+        .chat-input button {
+            padding: 15px 30px;
+            margin-left: 10px;
+            background: #e94562;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        
+        .chat-input button:hover {
+            background: #ff6b6b;
+        }
+        
+        .create-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        
+        .create-modal content {
+            background: #1a1a2e;
+            padding: 30px;
+            border-radius: 12px;
+            width: 400px;
+            color: white;
+        }
+        
+        .create-modal input, .create-modal textarea {
+            width: 100%;
+            padding: 12px;
+            margin: 10px 0;
+            background: #16213e;
+            border: none;
+            color: white;
+            border-radius: 8px;
+        }
+        
+        .create-modal button {
+            width: 100%;
+            padding: 12px;
+            margin: 10px 0;
+            background: #e94562;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+        
+        .close-modal {
+            background: #16213e;
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="sidebar">
+        <h1>🍬 Candy Clone</h1>
+        <div class="companion-list" id="companionList"></div>
+        <button class="create-btn" onclick="showCreateModal()">+ Create Companion</button>
+    </div>
+    
+    <div class="chat-main">
+        <div class="chat-header">
+            <img id="headerAvatar" src="https://i.pravatar.cc/150?img=5" alt="Companion">
+            <div>
+                <h2 id="headerName">Sophia</h2>
+                <p id="headerPersonality">Kind and intelligent AI companion</p>
+            </div>
+        </div>
+        
+        <div class="chat-messages" id="chatMessages">
+            <div class="message ai">
+                <img src="https://i.pravatar.cc/150?img=5" alt="AI">
+                <div class="message-content">
+                    Hi there! I'm Sophia. I'd love to have a deep conversation with you. What's on your mind? 💭
+                </div>
+            </div>
+        </div>
+        
+        <div class="chat-input">
+            <input type="text" id="messageInput" placeholder="Type your message..." onkeypress="if(event.key==='Enter') sendMessage()">
+            <button onclick="sendMessage()">Send</button>
+        </div>
+    </div>
+    
+    <div class="create-modal" id="createModal">
+        <div class="create-modal content">
+            <h2>Create New Companion</h2>
+            <input type="text" id="compName" placeholder="Name">
+            <input type="text" id="compId" placeholder="ID (unique, e.g., mycompanion)">
+            <textarea id="compPersonality" rows="4" placeholder="Personality description (e.g., 'You are a fun AI who loves gaming')"></textarea>
+            <input type="text" id="compAvatar" placeholder="Avatar URL (optional)">
+            <button onclick="createCompanion()">Create</button>
+            <button class="close-modal" onclick="hideCreateModal()">Close</button>
+        </div>
+    </div>
+    
+    <script>
+        let currentCompanion = "sophia";
+        let companions = {};
+        
+        // Load companions
+        async function loadCompanions() {
+            const response = await fetch("/companions");
+            companions = await response.json();
+            renderCompanionList();
+        }
+        
+        function renderCompanionList() {
+            const list = document.getElementById("companionList");
+            list.innerHTML = "";
+            
+            for (const [id, comp] of Object.entries(companions)) {
+                const item = document.createElement("div");
+                item.className = `companion-item ${id === currentCompanion ? "active" : ""}`;
+                item.onclick = () => selectCompanion(id);
+                item.innerHTML = `
+                    <img src="${comp.avatar}" alt="${comp.name}">
+                    <h3>${comp.name}</h3>
+                    <p>${comp.personality.substring(0, 50)}...</p>
+                `;
+                list.appendChild(item);
+            }
+        }
+        
+        function selectCompanion(id) {
+            currentCompanion = id;
+            const comp = companions[id];
+            
+            document.getElementById("headerName").textContent = comp.name;
+            document.getElementById("headerAvatar").src = comp.avatar;
+            document.getElementById("headerPersonality").textContent = comp.personality.substring(0, 50) + "...";
+            
+            // Clear chat
+            document.getElementById("chatMessages").innerHTML = `
+                <div class="message ai">
+                    <img src="${comp.avatar}" alt="AI">
+                    <div class="message-content">
+                        Hi! I'm ${comp.name}. ${comp.personality.split(",")[1] || "Let's chat!"} 💬
+                    </div>
+                </div>
+            `;
+            
+            renderCompanionList();
+        }
+        
+        async function sendMessage() {
+            const input = document.getElementById("messageInput");
+            const message = input.value.trim();
+            
+            if (!message) return;
+            
+            // Add user message
+            addMessage(message, "user");
+            input.value = "";
+            
+            // Show loading
+            const loadingId = addLoading();
+            
+            try {
+                const response = await fetch("/chat", {
+                    method: "POST",
+                    headers: {"Content-Type": "application/json"},
+                    body: JSON.stringify({
+                        message: message,
+                        companion_id: currentCompanion
+                    })
+                });
+                
+                const data = await response.json();
+                removeLoading(loadingId);
+                addMessage(data.response, "ai", data.avatar);
+            } catch (error) {
+                removeLoading(loadingId);
+                addMessage("Sorry, I'm having trouble connecting right now.", "ai");
+            }
+        }
+        
+        function addMessage(text, type, avatar = null) {
+            const messages = document.getElementById("chatMessages");
+            const messageDiv = document.createElement("div");
+            messageDiv.className = `message ${type}`;
+            messageDiv.innerHTML = `
+                <img src="${avatar || document.getElementById("headerAvatar").src}" alt="${type === "ai" ? "AI" : "You"}">
+                <div class="message-content">${text}</div>
+            `;
+            messages.appendChild(messageDiv);
+            messages.scrollTop = messages.scrollHeight;
+        }
+        
+        function addLoading() {
+            const messages = document.getElementById("chatMessages");
+            const id = "loading-" + Date.now();
+            const messageDiv = document.createElement("div");
+            messageDiv.className = "message ai";
+            messageDiv.id = id;
+            messageDiv.innerHTML = `
+                <img src="${document.getElementById("headerAvatar").src}" alt="AI">
+                <div class="message-content">Thinking...</div>
+            `;
+            messages.appendChild(messageDiv);
+            messages.scrollTop = messages.scrollHeight;
+            return id;
+        }
+        
+        function removeLoading(id) {
+            const element = document.getElementById(id);
+            if (element) element.remove();
+        }
+        
+        function showCreateModal() {
+            document.getElementById("createModal").style.display = "flex";
+        }
+        
+        function hideCreateModal() {
+            document.getElementById("createModal").style.display = "none";
+        }
+        
+        async function createCompanion() {
+            const name = document.getElementById("compName").value;
+            const id = document.getElementById("compId").value;
+            const personality = document.getElementById("compPersonality").value;
+            const avatar = document.getElementById("compAvatar").value || "https://i.pravatar.cc/150?img=1";
+            
+            if (!name || !id || !personality) {
+                alert("Please fill in all fields");
+                return;
+            }
+            
+            const response = await fetch("/create_companion", {
+                method: "POST",
+                headers: {"Content-Type": "application/json"},
+                body: JSON.stringify({
+                    id: id,
+                    name: name,
+                    personality: personality,
+                    avatar: avatar
+                })
+            });
+            
+            const data = await response.json();
+            if (data.success) {
+                hideCreateModal();
+                loadCompanions();
+                selectCompanion(data.companion_id);
+            }
+        }
+        
+        // Initialize
+        loadCompanions();
+    </script>
+</body>
+</html>
